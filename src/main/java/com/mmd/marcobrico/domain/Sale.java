@@ -31,6 +31,10 @@ public class Sale {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "client_id")
+    private Client client;
+
     protected Sale() {}
 
     private Sale(User user, List<SaleItem> items, BigDecimal total) {
