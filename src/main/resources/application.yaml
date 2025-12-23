@@ -4,6 +4,10 @@ server:
     context-path: /api
 
 spring:
+  devtools:
+    restart:
+      enabled: true
+      trigger-file: .reloadtrigger
   application:
     name: marcobrico-management
 
@@ -16,7 +20,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+#    show-sql: true
     properties:
       hibernate:
         format_sql: true
@@ -28,7 +32,7 @@ logging:
     root: INFO
     org.springframework.web: INFO
 #    org.hibernate.SQL: INFO
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+#    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
 
 springdoc:
   api-docs:
