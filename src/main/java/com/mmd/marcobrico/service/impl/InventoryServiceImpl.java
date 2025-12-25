@@ -12,6 +12,7 @@ import com.mmd.marcobrico.mapper.InventoryMapper;
 import com.mmd.marcobrico.repository.InventoryRepository;
 import com.mmd.marcobrico.repository.ProductRepository;
 import com.mmd.marcobrico.service.InventoryService;
+import com.mmd.marcobrico.service.jwt.AuthenticatedUserService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class InventoryServiceImpl implements InventoryService {
     private final InventoryRepository inventoryRepository;
     private final ProductRepository productRepository;
     private final InventoryMapper mapper;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     public InventoryResponseDto addEntry(InventoryCreateDto dto) {
@@ -40,7 +42,7 @@ public class InventoryServiceImpl implements InventoryService {
         }
 
         var type = dto.quantityChange() > 0 ? InventoryType.ENTRY : InventoryType.SALE;
-        User user = new User("","","");
+        var  user = authenticatedUserService.getUserConnected();
         var entry = InventoryEntry.create(product, quantityBefore, quantityAfter, type, dto.comment(), user);
 
         productRepository.save(product.changeQuantity(quantityAfter));
@@ -79,7 +81,7 @@ public class InventoryServiceImpl implements InventoryService {
         };
 
         // Recupere l'utilisateuyr connecter
-        User user = new User("","","");
+        var  user = authenticatedUserService.getUserConnected();
         InventoryEntry reversedEntry = InventoryEntry.create(
                 product,
                 product.getQuantity(),

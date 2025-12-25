@@ -10,6 +10,7 @@ import com.mmd.marcobrico.repository.PartnerRepository;
 import com.mmd.marcobrico.repository.ProductRepository;
 import com.mmd.marcobrico.repository.SupplyRepository;
 import com.mmd.marcobrico.service.SupplyService;
+import com.mmd.marcobrico.service.jwt.AuthenticatedUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +33,7 @@ public class SupplyServiceImpl implements SupplyService {
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository;
     private final SupplyMapper mapper;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     public SupplyResponseDto create(SupplyCreateDto dto) {
@@ -68,7 +70,7 @@ public class SupplyServiceImpl implements SupplyService {
 
             productRepository.save(product.changeQuantity(after));
 
-            User user = new User("","","");
+            var  user = authenticatedUserService.getUserConnected();
             inventoryRepository.save(
                     InventoryEntry.create(
                             product,
