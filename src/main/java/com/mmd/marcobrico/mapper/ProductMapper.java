@@ -13,24 +13,31 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface ProductMapper {
 
+
     @ObjectFactory
     default Product toEntity(ProductCreateDto dto, @Context Category category) {
+        Integer seuilStock = dto.seuilStock() != null ? dto.seuilStock() : 10;
+        Integer quantity = dto.quantity() != null ? dto.quantity() : 0; // sécurité si quantity est null
+
         return Product.create(
                 dto.name(),
                 dto.reference(),
                 dto.price(),
-                dto.quantity(),
-                dto.seuilStock(),
+                quantity,
+                seuilStock,
                 category
         );
     }
 
+
     @ObjectFactory
     default Product updateEntity(ProductUpdateDto dto, @Context Product existing, @Context Category category) {
+        Integer seuilStock = dto.seuilStock() != null ? dto.seuilStock() : (existing.getSeuilStock() != null ? existing.getSeuilStock() : 10);
+
         return existing.update(
                 dto.name(),
                 dto.price(),
-                dto.seuilStock(),
+                seuilStock,
                 category
         );
     }
@@ -41,8 +48,8 @@ public interface ProductMapper {
                 product.getName(),
                 product.getReference(),
                 product.getPrice(),
-                product.getQuantity(),
-                product.getSeuilStock(),
+                product.getQuantity() != null ? product.getQuantity() : 0,
+                product.getSeuilStock() != null ? product.getSeuilStock() : 10,
                 product.getCategory().getId(),
                 product.getCategory().getName()
         );

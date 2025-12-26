@@ -17,6 +17,10 @@ public class SaleItem {
     @ManyToOne(optional = false)
     private Product product;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sale_id", nullable = false)
+    private Sale sale;
+
     @Column(nullable = false)
     private int quantity;
 

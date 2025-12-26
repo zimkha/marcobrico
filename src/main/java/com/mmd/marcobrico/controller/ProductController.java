@@ -1,9 +1,6 @@
 package com.mmd.marcobrico.controller;
 
-import com.mmd.marcobrico.dto.product.ProductCreateDto;
-import com.mmd.marcobrico.dto.product.ProductFilterDto;
-import com.mmd.marcobrico.dto.product.ProductResponseDto;
-import com.mmd.marcobrico.dto.product.ProductUpdateDto;
+import com.mmd.marcobrico.dto.product.*;
 import com.mmd.marcobrico.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +36,7 @@ public class ProductController {
         return service.findAll();
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id}/details")
     public ProductResponseDto getById(@PathVariable Long id) {
         return service.findById(id);
     }
@@ -60,5 +57,9 @@ public class ProductController {
     ) {
         var filter = new ProductFilterDto(name, categoryId, belowThreshold, page, size, sortBy, sortDirection);
         return service.searchProducts(filter);
+    }
+    @GetMapping("/{id}/stats")
+    public ProductStatsDto getProductStats(@PathVariable("id") Long productId) {
+        return service.getProductStats(productId);
     }
 }

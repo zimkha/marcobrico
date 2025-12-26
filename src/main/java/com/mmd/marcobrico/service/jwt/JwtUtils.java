@@ -19,39 +19,16 @@ public class JwtUtils {
 
 
     private final AppJwtConfig jwtConfig;
-    private final SecretKey secretKey;
+
     public JwtUtils(AppJwtConfig jwtConfig) {
         this.jwtConfig = jwtConfig;
-
-        // Génère la clé UNE SEULE FOIS au démarrage
-        byte[] keyBytes = jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8);
-        this.secretKey = Keys.hmacShaKeyFor(keyBytes);
-
-        System.out.println("=== JWT CONFIG LOADED ===");
-        System.out.println("Secret: " + jwtConfig.getSecret());
-        System.out.println("Secret length: " + jwtConfig.getSecret().length() + " chars");
-        System.out.println("Secret bytes length: " + keyBytes.length);
-        System.out.println("Secret hashCode: " + Arrays.hashCode(keyBytes));
-        System.out.println("Expiration: " + jwtConfig.getExpiration());
-        System.out.println("SecretKey generated and cached");
     }
 
     private SecretKey key() {
-        byte[] keyBytes = jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8);
-        int hashCode = Arrays.hashCode(keyBytes);
-
-        System.out.println("[KEY] Secret: " + (jwtConfig.getSecret() != null ? jwtConfig.getSecret() : "NULL"));
-        System.out.println("[KEY] Secret length: " + (jwtConfig.getSecret() != null ? jwtConfig.getSecret().length() : 0));
-        System.out.println("[KEY] Key bytes hashCode: " + hashCode);
-
         return Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateJwtToken(UserDetails userDetails) {
-        System.out.println("\n=== GENERATING TOKEN ===");
-        System.out.println("Username: " + userDetails.getUsername());
-        System.out.println("Authorities: " + userDetails.getAuthorities());
-
         String token = Jwts.builder()
                 .setSubject(userDetails.getUsername())
                 .claim("role", userDetails.getAuthorities().iterator().next().getAuthority())
@@ -59,8 +36,6 @@ public class JwtUtils {
                 .setExpiration(new Date(System.currentTimeMillis() + jwtConfig.getExpiration()))
                 .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
-
-        System.out.println("Token generated successfully");
         return token;
     }
 
@@ -84,15 +59,13 @@ public class JwtUtils {
     }
 
     public boolean validateJwtToken(String token) {
-        System.out.println("\n=== VALIDATING TOKEN ===");
-        System.out.println("Token to validate: " + token);
-        System.out.println("Token length: " + token.length());
+
         try {
             Jwts.parserBuilder()
                     .setSigningKey(key())
                     .build()
                     .parseClaimsJws(token);
-            System.out.println("✅ Token validation SUCCESS");
+
             return true;
 
         } catch (SignatureException e) {

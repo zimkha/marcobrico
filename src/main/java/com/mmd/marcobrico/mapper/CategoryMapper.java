@@ -4,10 +4,7 @@ import com.mmd.marcobrico.domain.Category;
 import com.mmd.marcobrico.dto.category.CategoryCreateDto;
 import com.mmd.marcobrico.dto.category.CategoryResponseDto;
 import com.mmd.marcobrico.dto.category.CategoryUpdateDto;
-import org.mapstruct.Context;
-import org.mapstruct.Mapper;
-import org.mapstruct.ObjectFactory;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface CategoryMapper {
@@ -25,4 +22,7 @@ public interface CategoryMapper {
     }
 
     CategoryResponseDto toDto(Category category);
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    void update(@MappingTarget Category category, CategoryUpdateDto dto);
+    CategoryResponseDto toResponseDto(Category category);
 }

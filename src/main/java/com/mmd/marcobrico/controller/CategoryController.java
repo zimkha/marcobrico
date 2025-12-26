@@ -11,6 +11,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,4 +40,23 @@ public class CategoryController {
     ) {
         return service.update(id, dto);
     }
+
+    @GetMapping
+    public Page<CategoryResponseDto> getCategories(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        return service.getCategories(pageable);
+    }
+    @GetMapping("/search")
+    public Page<CategoryResponseDto> search(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return service.search(keyword, pageable);
+    }
+
+
 }

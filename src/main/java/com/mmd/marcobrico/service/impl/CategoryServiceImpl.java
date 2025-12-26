@@ -8,6 +8,8 @@ import com.mmd.marcobrico.exception.ResourceNotFoundException;
 import com.mmd.marcobrico.mapper.CategoryMapper;
 import com.mmd.marcobrico.repository.CategoryRepository;
 import com.mmd.marcobrico.service.CategoryService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 
@@ -44,4 +46,20 @@ public class CategoryServiceImpl implements CategoryService {
 
         return mapper.toDto(repository.save(updated));
     }
+
+    @Override
+    public Page<CategoryResponseDto> getCategories(Pageable pageable) {
+        return repository
+                .findAll(pageable)
+                .map(mapper::toDto);
+    }
+
+    @Override
+    public Page<CategoryResponseDto> search(String keyword, Pageable pageable) {
+        Page<Category> categories = repository
+                .findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(keyword, keyword, pageable);
+
+        return categories.map(mapper::toResponseDto);
+    }
+
 }
