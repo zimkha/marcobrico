@@ -78,6 +78,7 @@ public class InventoryServiceImpl implements InventoryService {
             case ENTRY -> InventoryType.ADJUSTMENT;
             case SALE -> InventoryType.ENTRY;
             case ADJUSTMENT -> InventoryType.ADJUSTMENT;
+            case CANCELED -> InventoryType.CANCELED;
         };
 
         // Recupere l'utilisateuyr connecter

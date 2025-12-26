@@ -31,7 +31,7 @@ public class Sale {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = true)
     @JoinColumn(name = "client_id")
     private Client client;
 

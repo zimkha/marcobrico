@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificationExecutor<Sale> {
@@ -31,5 +32,22 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
         WHERE si.product.id = :productId
     """)
     BigDecimal getRevenueByProductId(@Param("productId") Long productId);
+    @Query("""
+        SELECT SUM(s.total)
+        FROM Sale s
+        WHERE s.canceled = false
+    """)
+    BigDecimal totalRevenue();
+
+    @Query("""
+        SELECT SUM(s.total)
+        FROM Sale s
+        WHERE s.canceled = false
+          AND s.createdAt BETWEEN :start AND :end
+    """)
+    BigDecimal revenueBetween(
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
 }
 

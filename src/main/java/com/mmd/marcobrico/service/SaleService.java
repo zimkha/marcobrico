@@ -4,6 +4,7 @@ import com.mmd.marcobrico.dto.sale.SaleCreateDto;
 import com.mmd.marcobrico.dto.sale.SaleResponseDto;
 import org.springframework.data.domain.Page;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public interface SaleService {
@@ -14,11 +15,13 @@ public interface SaleService {
     Page<SaleResponseDto> searchSales(
             Long productId,
             Long userId,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
+            LocalDate startDate,
+            LocalDate endDate,
             int page,
             int size,
             String sortBy,
             String sortDirection
     );
+
+    SaleResponseDto getSaleDetail(Long saleId);
 }

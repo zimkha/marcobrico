@@ -18,6 +18,10 @@ public interface SaleMapper {
     }
 
     default SaleResponseDto toDto(Sale sale) {
+
+        Long clientId = sale.getClient() != null ? sale.getClient().getId() : null;
+        String clientName = sale.getClient() != null ? sale.getClient().getName() : null;
+
         List<SaleItemResponseDto> itemDtos = sale.getItems().stream()
                 .map(i -> new SaleItemResponseDto(
                         i.getProduct().getId(),
@@ -31,10 +35,13 @@ public interface SaleMapper {
                 sale.getId(),
                 sale.getUser().getId(),
                 sale.getUser().getUsername(),
+                clientId,
+                clientName,
                 itemDtos,
                 sale.getTotal(),
                 sale.isCanceled(),
                 sale.getCreatedAt()
         );
     }
+
 }

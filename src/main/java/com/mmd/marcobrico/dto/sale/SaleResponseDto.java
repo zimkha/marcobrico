@@ -7,6 +7,8 @@ public record SaleResponseDto(
         Long id,
         Long userId,
         String username,
+        Long clientId,
+        String clientName,
         List<SaleItemResponseDto> items,
         BigDecimal total,
         boolean canceled,

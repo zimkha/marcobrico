@@ -17,12 +17,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,14 +34,19 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class SaleServiceImpl implements SaleService {
+
     private final SaleRepository saleRepository;
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository;
     private final SaleMapper saleMapper;
     private final UserRepository userRepository;
+
     @Override
     public SaleResponseDto createSale(SaleCreateDto dto) {
-        var user = userRepository.findById(dto.userId())
+        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
+
+        assert authentication != null;
+        var user = userRepository.findByUsername(authentication.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
 
         List<SaleItem> items = dto.items().stream().map(i -> {
@@ -64,13 +73,18 @@ public class SaleServiceImpl implements SaleService {
             return SaleItem.create(product, i.quantity());
         }).toList();
 
-        Sale sale = Sale.create(user, items);
-        return saleMapper.toDto(saleRepository.save(sale));
+        Sale entry = Sale.create(user, items);
+        return saleMapper.toDto(saleRepository.save(entry));
     }
 
 
     @Override
     public SaleResponseDto cancelSale(Long saleId, String comment) {
+        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
+        assert authentication != null;
+        var currentUser = userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
+
         Sale sale = saleRepository.findById(saleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vente introuvable"));
 
@@ -82,26 +96,26 @@ public class SaleServiceImpl implements SaleService {
 
             productRepository.save(product.changeQuantity(restoredQuantity));
 
-            InventoryEntry entry = InventoryEntry.create(
+            InventoryEntry canceled = InventoryEntry.create(
                     product,
                     product.getQuantity(),
                     restoredQuantity,
-                    InventoryType.ENTRY,
-                    "Annulation vente: " + comment, sale.getUser()
+                    InventoryType.CANCELED,
+                    "Annulation vente: " + comment, currentUser
             );
-            inventoryRepository.save(entry);
+            inventoryRepository.save(canceled);
         });
 
-        Sale canceled = sale.cancel();
-        return saleMapper.toDto(saleRepository.save(canceled));
+        Sale canceledSale = sale.cancel();
+        return saleMapper.toDto(saleRepository.save(canceledSale));
     }
 
     @Override
     public Page<SaleResponseDto> searchSales(
             Long productId,
             Long userId,
-            LocalDateTime startDate,
-            LocalDateTime endDate,
+            LocalDate startDate,
+            LocalDate endDate,
             int page,
             int size,
             String sortBy,
@@ -117,11 +131,18 @@ public class SaleServiceImpl implements SaleService {
             if (userId != null)
                 predicates.add(cb.equal(root.get("user").get("id"), userId));
 
+            LocalDateTime startDateTime = startDate != null
+                    ? startDate.atStartOfDay()
+                    : null;
+
+            LocalDateTime endDateTime = endDate != null
+                    ? endDate.atTime(LocalTime.MAX)
+                    : null;
             if (startDate != null)
-                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), startDate));
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), startDateTime));
 
             if (endDate != null)
-                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), endDate));
+                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), endDateTime));
 
             if (productId != null) {
                 Join<Sale, SaleItem> items = root.join("items");
@@ -133,6 +154,13 @@ public class SaleServiceImpl implements SaleService {
 
         Page<Sale> sales = saleRepository.findAll(spec, pageable);
         return sales.map(saleMapper::toDto);
+    }
+
+    @Override
+    public SaleResponseDto getSaleDetail(Long saleId) {
+        Sale sale = saleRepository.findById(saleId)
+                .orElseThrow(() -> new ResourceNotFoundException("Vente non trouvé"));
+        return saleMapper.toDto(sale);
     }
 }
 

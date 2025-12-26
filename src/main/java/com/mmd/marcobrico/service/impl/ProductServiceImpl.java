@@ -133,7 +133,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductStatsDto getProductStats(Long productId) {
         // Récupération du produit
         Product product = repository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Produit non trouvé"));
+                .orElseThrow(() -> new ResourceNotFoundException("Produit non trouvé"));
 
         // Récupération des dernières ventes
         List<SaleItemStatDto> lastSales = saleRepository.findSalesByProductIdOrderByDateDesc(productId)
