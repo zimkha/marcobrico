@@ -1,7 +1,5 @@
 package com.mmd.marcobrico.dto.inventory;
 
-import com.mmd.marcobrico.domain.User;
-
 import java.time.LocalDateTime;
 
 public record InventoryResponseDto(Long id,

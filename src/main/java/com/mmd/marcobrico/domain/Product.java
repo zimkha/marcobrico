@@ -51,7 +51,6 @@ public class Product {
     }
 
 
-
     public static Product create(String name, String reference, BigDecimal price,
                                  Integer quantity, Integer seuilStock, Category category) {
         if (quantity < 0) throw new IllegalArgumentException("Le stock ne peut pas être négatif");
@@ -65,6 +64,13 @@ public class Product {
     public Product changeQuantity(int newQuantity) {
         if (newQuantity < 0) throw new IllegalArgumentException("Le stock ne peut pas être négatif");
         return new Product(id, name, reference, price, newQuantity, seuilStock, category, active);
+    }
+
+    public Product addQuantity(int delta) {
+        int updatedQuantity = this.quantity + delta;
+        if (updatedQuantity < 0)
+            throw new IllegalArgumentException("Le stock ne peut pas être négatif");
+        return new Product(id, name, reference, price, updatedQuantity, seuilStock, category, active);
     }
 
 }

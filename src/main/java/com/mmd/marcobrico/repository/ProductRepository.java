@@ -40,6 +40,7 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
         GROUP BY p.id, p.name
     """)
     List<AverageSoldDto> averageSold();
+    List<Product> findTop10ByNameContainingIgnoreCaseOrderByNameAsc(String name);
 
 
 

@@ -3,8 +3,9 @@ package com.mmd.marcobrico.service.impl;
 import com.mmd.marcobrico.domain.InventoryEntry;
 import com.mmd.marcobrico.domain.InventoryType;
 import com.mmd.marcobrico.domain.Product;
-import com.mmd.marcobrico.domain.User;
+
 import com.mmd.marcobrico.dto.inventory.InventoryCreateDto;
+import com.mmd.marcobrico.dto.inventory.InventoryFilterDto;
 import com.mmd.marcobrico.dto.inventory.InventoryResponseDto;
 import com.mmd.marcobrico.exception.BusinessException;
 import com.mmd.marcobrico.exception.ResourceNotFoundException;
@@ -13,8 +14,16 @@ import com.mmd.marcobrico.repository.InventoryRepository;
 import com.mmd.marcobrico.repository.ProductRepository;
 import com.mmd.marcobrico.service.InventoryService;
 import com.mmd.marcobrico.service.jwt.AuthenticatedUserService;
+import com.mmd.marcobrico.specification.InventorySpecification;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -40,6 +49,8 @@ public class InventoryServiceImpl implements InventoryService {
         if (quantityAfter < 0) {
             throw new BusinessException("Stock insuffisant pour cette opération");
         }
+        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
+
 
         var type = dto.quantityChange() > 0 ? InventoryType.ENTRY : InventoryType.SALE;
         var  user = authenticatedUserService.getUserConnected();
@@ -97,4 +108,22 @@ public class InventoryServiceImpl implements InventoryService {
 
         return mapper.toDto(inventoryRepository.save(reversedEntry));
     }
+
+    @Override
+    public Page<InventoryResponseDto> search(InventoryFilterDto dto) {
+
+        Pageable pageable = PageRequest.of(
+                dto.page(),
+                dto.size(),
+                Sort.by(Sort.Direction.fromString(dto.sortDirection()), dto.sortBy())
+        );
+
+        Page<InventoryEntry> page = inventoryRepository.findAll(
+                InventorySpecification.filter(dto),
+                pageable
+        );
+
+        return page.map(mapper::toDto);
+    }
+
 }

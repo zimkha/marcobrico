@@ -163,4 +163,17 @@ public class ProductServiceImpl implements ProductService {
                 lastSales
         );
     }
+
+    @Override
+    public List<ProductResponseDto> findProductByName(String name) {
+        if (name == null || name.trim().length() < 2) {
+            return List.of();
+        }
+
+        return repository
+                .findTop10ByNameContainingIgnoreCaseOrderByNameAsc(name.trim())
+                .stream()
+                .map(mapper::toDto)
+                .toList();
+    }
 }

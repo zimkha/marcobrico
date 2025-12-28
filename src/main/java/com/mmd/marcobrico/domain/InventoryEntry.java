@@ -35,24 +35,27 @@ public class InventoryEntry {
     @Column(length = 255)
     private String comment;
 
-    @ManyToOne User user;
+    @JoinColumn(name = "user_id")
+    @ManyToOne
+    private User user;
 
     protected InventoryEntry() {}
 
     private InventoryEntry(Product product, int quantityBefore, int quantityAfter,
-                           InventoryType type, String comment) {
+                           InventoryType type, String comment, User user) {
         this.product = product;
         this.quantityBefore = quantityBefore;
         this.quantityAfter = quantityAfter;
         this.type = type;
         this.comment = comment;
         this.createdAt = LocalDateTime.now();
+        this.user = user;
     }
 
     public static InventoryEntry create(Product product, int quantityBefore, int quantityAfter,
                                         InventoryType type, String comment, User user) {
         if (quantityAfter < 0) throw new IllegalArgumentException("Stock ne peut pas être négatif");
-        return new InventoryEntry(product, quantityBefore, quantityAfter, type, comment);
+        return new InventoryEntry(product, quantityBefore, quantityAfter, type, comment, user);
     }
 
 }

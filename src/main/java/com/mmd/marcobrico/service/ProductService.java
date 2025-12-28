@@ -22,4 +22,5 @@ public interface ProductService {
 
     ProductDetailDto getProductDetail(Long productId);
     ProductStatsDto getProductStats(Long productId);
+    List<ProductResponseDto> findProductByName(String name);
 }

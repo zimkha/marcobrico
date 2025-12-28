@@ -35,8 +35,7 @@ logging:
     root: INFO
     org.springframework.web: INFO
     org.springframework.security: DEBUG
-#    org.hibernate.SQL: INFO
-#    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
 
 springdoc:
   api-docs:

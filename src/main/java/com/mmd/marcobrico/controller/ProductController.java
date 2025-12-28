@@ -62,4 +62,10 @@ public class ProductController {
     public ProductStatsDto getProductStats(@PathVariable("id") Long productId) {
         return service.getProductStats(productId);
     }
+    @GetMapping("/search-by-name")
+    public List<ProductResponseDto> searchByName(
+            @RequestParam("q") String query
+    ) {
+        return service.findProductByName(query);
+    }
 }

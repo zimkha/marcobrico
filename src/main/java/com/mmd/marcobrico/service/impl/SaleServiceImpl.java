@@ -56,12 +56,12 @@ public class SaleServiceImpl implements SaleService {
             int newQuantity = product.getQuantity() - i.quantity();
             if (newQuantity < 0) throw new BusinessException("Stock insuffisant pour " + product.getName());
 
-
+            var qteBeforeSave = product.getQuantity();
             productRepository.save(product.changeQuantity(newQuantity));
 
             InventoryEntry entry = InventoryEntry.create(
                     product,
-                    product.getQuantity(),
+                    qteBeforeSave,
                     newQuantity,
                     InventoryType.SALE,
                     "Vente",
