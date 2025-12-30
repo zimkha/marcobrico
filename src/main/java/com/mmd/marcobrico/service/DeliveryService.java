@@ -7,7 +7,6 @@ import org.springframework.data.domain.Page;
 
 public interface DeliveryService {
 
-
     DeliveryResponseDto create(DeliveryCreateDto dto);
 
     DeliveryResponseDto dispatch(Long deliveryId, String trackingNumber);
@@ -16,8 +15,10 @@ public interface DeliveryService {
 
     DeliveryResponseDto cancel(Long deliveryId);
 
+    DeliveryResponseDto createDeliveryFromSupply(Long supplyId, Long clientId, String address);
+
     Page<DeliveryResponseDto> search(
-            Long saleId,
+            Long clientId,
             Long carrierId,
             DeliveryStatus status,
             int page,
@@ -26,3 +27,4 @@ public interface DeliveryService {
             String sortDirection
     );
 }
+

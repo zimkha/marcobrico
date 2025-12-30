@@ -1,6 +1,7 @@
 package com.mmd.marcobrico.service.impl;
 
 import com.mmd.marcobrico.domain.*;
+import com.mmd.marcobrico.dto.delivery.DeliveryResponseDto;
 import com.mmd.marcobrico.dto.supply.SupplyCreateDto;
 import com.mmd.marcobrico.dto.supply.SupplyResponseDto;
 import com.mmd.marcobrico.exception.BusinessException;
@@ -20,6 +21,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,7 +50,7 @@ public class SupplyServiceImpl implements SupplyService {
             Product product = productRepository.findById(i.productId())
                     .orElseThrow(() -> new BusinessException("Produit introuvable"));
 
-            return SupplyItem.create(product, i.quantity());
+            return SupplyItem.create(product, i.quantity(),i.price());
         }).toList();
 
         Supply supply = Supply.create(supplier, items);
@@ -118,6 +120,11 @@ public class SupplyServiceImpl implements SupplyService {
         };
 
         return supplyRepository.findAll(spec, pageable).map(mapper::toDto);
+    }
+
+    @Override
+    public DeliveryResponseDto createDeliveryFromSupply(Long supplyId, Long clientId, String address) {
+        return null;
     }
 
 }

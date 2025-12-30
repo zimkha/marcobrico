@@ -5,78 +5,78 @@ import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
 @Table(name = "deliveries")
 @Getter
 public class Delivery {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false)
-    private Sale sale;
-
-    @ManyToOne(optional = false)
-    private Partner carrier;
+    private Client client;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private DeliveryStatus status;
 
+    @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DeliveryItem> items = new ArrayList<>();
+
+    @OneToMany
+    @JoinColumn(name = "delivery_id")
+    private List<Sale> sales = new ArrayList<>();
+
+
+    private String address;
     private String trackingNumber;
 
-    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
     protected Delivery() {}
 
-    private Delivery(Sale sale, Partner carrier) {
-        this.sale = sale;
-        this.carrier = carrier;
+    private Delivery(Client client, String address) {
+        this.client = client;
+
+        this.address = address;
         this.status = DeliveryStatus.CREATED;
         this.createdAt = LocalDateTime.now();
     }
 
-    public static Delivery create(Sale sale, Partner carrier) {
-
-        if (carrier.getType() != PartnerType.CARRIER)
-            throw new IllegalArgumentException("Partenaire non transporteur");
-
-        if (sale.isCanceled())
-            throw new IllegalArgumentException("Vente annulée");
-
-        return new Delivery(sale, carrier);
+    public static Delivery create(Client client, String address) {
+        return new Delivery(client, address);
     }
 
-    public Delivery markInTransit(String tracking) {
-        if (this.status != DeliveryStatus.CREATED)
+    public void addItem(DeliveryItem item) {
+        if (status != DeliveryStatus.CREATED)
+            throw new IllegalStateException("Impossible d’ajouter des articles");
+        this.items.add(item);
+    }
+
+    public void markInTransit(String tracking) {
+        if (status != DeliveryStatus.CREATED)
             throw new IllegalStateException("Livraison non expédiable");
-
-        Delivery d = new Delivery(this.sale, this.carrier);
-        d.status = DeliveryStatus.IN_TRANSIT;
-        d.trackingNumber = tracking;
-        return d;
+        this.status = DeliveryStatus.IN_TRANSIT;
+        this.trackingNumber = tracking;
     }
 
-    public Delivery markDelivered() {
-        if (this.status != DeliveryStatus.IN_TRANSIT)
+    public void markDelivered() {
+        if (status != DeliveryStatus.IN_TRANSIT)
             throw new IllegalStateException("Livraison non livrable");
-
-        Delivery d = new Delivery(this.sale, this.carrier);
-        d.status = DeliveryStatus.DELIVERED;
-        d.trackingNumber = this.trackingNumber;
-        return d;
+        this.status = DeliveryStatus.DELIVERED;
     }
 
-    public Delivery cancel() {
-        if (this.status == DeliveryStatus.DELIVERED)
+    public void cancel() {
+        if (status == DeliveryStatus.DELIVERED)
             throw new IllegalStateException("Livraison déjà effectuée");
-
-        Delivery d = new Delivery(this.sale, this.carrier);
-        d.status = DeliveryStatus.CANCELED;
-        return d;
+        this.status = DeliveryStatus.CANCELED;
+    }
+    public void addSale(Sale sale) {
+        this.sales.add(sale);
     }
 
     @Override
@@ -91,3 +91,5 @@ public class Delivery {
         return Objects.hash(id);
     }
 }
+
+

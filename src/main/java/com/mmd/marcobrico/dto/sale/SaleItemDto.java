@@ -1,3 +1,5 @@
 package com.mmd.marcobrico.dto.sale;
 
-public record SaleItemDto(Long productId, int quantity) {}
+import java.math.BigDecimal;
+
+public record SaleItemDto(Long productId, int quantity, BigDecimal price) {}

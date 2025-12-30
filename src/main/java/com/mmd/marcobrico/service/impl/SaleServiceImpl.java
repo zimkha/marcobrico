@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -69,11 +70,11 @@ public class SaleServiceImpl implements SaleService {
 
             );
             inventoryRepository.save(entry);
-
-            return SaleItem.create(product, i.quantity());
+            var totalSub = BigDecimal.valueOf(i.quantity() ).multiply(i.price()) ;
+            return SaleItem.create(product, i.quantity(), totalSub);
         }).toList();
 
-        Sale entry = Sale.create(user, items);
+        Sale entry = Sale.create(user, items, null);
         return saleMapper.toDto(saleRepository.save(entry));
     }
 
@@ -106,8 +107,8 @@ public class SaleServiceImpl implements SaleService {
             inventoryRepository.save(canceled);
         });
 
-        Sale canceledSale = sale.cancel();
-        return saleMapper.toDto(saleRepository.save(canceledSale));
+        sale.cancel();
+        return saleMapper.toDto(saleRepository.save(sale));
     }
 
     @Override
