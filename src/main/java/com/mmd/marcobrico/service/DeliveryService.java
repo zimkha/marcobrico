@@ -15,7 +15,7 @@ public interface DeliveryService {
 
     DeliveryResponseDto cancel(Long deliveryId);
 
-    DeliveryResponseDto createDeliveryFromSupply(Long supplyId, Long clientId, String address);
+    DeliveryResponseDto createDeliveryFromReceivedSupply(Long supplyId, Long clientId, String address);
 
     Page<DeliveryResponseDto> search(
             Long clientId,
@@ -24,6 +24,7 @@ public interface DeliveryService {
             int page,
             int size,
             String sortBy,
+
             String sortDirection
     );
 }

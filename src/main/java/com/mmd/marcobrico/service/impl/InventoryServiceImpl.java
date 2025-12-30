@@ -22,7 +22,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -92,7 +91,6 @@ public class InventoryServiceImpl implements InventoryService {
             case CANCELED -> InventoryType.CANCELED;
         };
 
-        // Recupere l'utilisateuyr connecter
         var  user = authenticatedUserService.getUserConnected();
         InventoryEntry reversedEntry = InventoryEntry.create(
                 product,
@@ -124,6 +122,60 @@ public class InventoryServiceImpl implements InventoryService {
         );
 
         return page.map(mapper::toDto);
+    }
+
+    @Override
+    public void deductStock(Product product, int quantity, String reason) {
+        int beforeQty = product.getQuantity();
+        int afterQty = beforeQty - quantity;
+
+        if (afterQty < 0) {
+            throw new BusinessException(
+                    String.format("Stock insuffisant pour %s. Disponible: %d, Demandé: %d",
+                            product.getName(), beforeQty, quantity)
+            );
+        }
+
+        Product updatedProduct = product.changeQuantity(afterQty);
+        productRepository.save(updatedProduct);
+
+        createInventoryEntry(updatedProduct, beforeQty, afterQty, InventoryType.SALE, reason);
+    }
+
+    @Override
+    public void addStock(Product product, int quantity, String reason) {
+        int beforeQty = product.getQuantity();
+        int afterQty = beforeQty + quantity;
+
+        Product updatedProduct = product.changeQuantity(afterQty);
+        productRepository.save(updatedProduct);
+
+        createInventoryEntry(updatedProduct, beforeQty, afterQty, InventoryType.ENTRY, reason);
+    }
+
+    @Override
+    public void applyInventoryAdjustment(Product product, int newQuantity, String reason) {
+        int beforeQty = product.getQuantity();
+
+        Product updatedProduct = product.changeQuantity(newQuantity);
+        productRepository.save(updatedProduct);
+
+        int afterQty = updatedProduct.getQuantity();
+
+        createInventoryEntry(updatedProduct, beforeQty, afterQty, InventoryType.ADJUSTMENT, reason);
+    }
+
+    private void createInventoryEntry(Product product, int beforeQty, int afterQty,
+                                      InventoryType type, String reason) {
+        InventoryEntry entry = InventoryEntry.create(
+                product,
+                beforeQty,
+                afterQty,
+                type,
+                reason,
+                authenticatedUserService.getUserConnected()
+        );
+        inventoryRepository.save(entry);
     }
 
 }

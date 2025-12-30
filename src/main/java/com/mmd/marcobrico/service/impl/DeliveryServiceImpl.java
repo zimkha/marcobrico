@@ -5,12 +5,13 @@ import com.mmd.marcobrico.domain.*;
 import com.mmd.marcobrico.dto.delivery.DeliveryCreateDto;
 import com.mmd.marcobrico.dto.delivery.DeliveryItemCreateDto;
 import com.mmd.marcobrico.dto.delivery.DeliveryResponseDto;
-import com.mmd.marcobrico.dto.sale.SaleResponseDto;
 import com.mmd.marcobrico.exception.BusinessException;
+import com.mmd.marcobrico.exception.ResourceNotFoundException;
 import com.mmd.marcobrico.mapper.DeliveryMapper;
 import com.mmd.marcobrico.mapper.SaleMapper;
 import com.mmd.marcobrico.repository.*;
 import com.mmd.marcobrico.service.DeliveryService;
+import com.mmd.marcobrico.service.InventoryService;
 import com.mmd.marcobrico.service.jwt.AuthenticatedUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -34,10 +35,10 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final SupplyRepository supplyRepository;
     private final DeliveryMapper mapper;
     private final ClientRepository clientRepository;
-    private final SaleMapper saleMapper;
     private final SaleRepository saleRepository;
     private final AuthenticatedUserService authenticatedUserService;
     private final InventoryRepository inventoryRepository;
+    private final InventoryService inventoryService;
 
     @Override
     public DeliveryResponseDto create(DeliveryCreateDto dto) {
@@ -63,35 +64,11 @@ public class DeliveryServiceImpl implements DeliveryService {
         return mapper.toDto(deliveryRepository.save(delivery));
     }
 
-//    @Override
-//    public DeliveryResponseDto createFromSupply(Long supplyId) {
-//
-//        Supply supply = supplyRepository.findById(supplyId)
-//                .orElseThrow(() -> new BusinessException("Approvisionnement introuvable"));
-//
-//        if (supply.getStatus() != SupplyStatus.RECEIVED)
-//            throw new BusinessException("Approvisionnement non reçu");
-//
-//        Delivery delivery = supply.getDelivery();
-//        if (delivery == null)
-//            throw new BusinessException("Aucune livraison associée à cet approvisionnement");
-//
-//        for (SupplyItem si : supply.getItems()) {
-//            DeliveryItem item = DeliveryItem.create(
-//                    delivery,
-//                    si.getProduct(),
-//                    si.getQuantity()
-//            );
-//            delivery.addItem(item);
-//        }
-//
-//        return mapper.toDto(deliveryRepository.save(delivery));
-//    }
 
     @Override
     public DeliveryResponseDto dispatch(Long deliveryId, String trackingNumber) {
         Delivery delivery = deliveryRepository.findById(deliveryId)
-                .orElseThrow(() -> new BusinessException("Livraison introuvable"));
+                .orElseThrow(() -> new ResourceNotFoundException("Livraison introuvable"));
 
         delivery.markInTransit(trackingNumber);
 
@@ -101,7 +78,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Override
     public DeliveryResponseDto deliver(Long deliveryId) {
         Delivery delivery = deliveryRepository.findById(deliveryId)
-                .orElseThrow(() -> new BusinessException("Livraison introuvable"));
+                .orElseThrow(() -> new ResourceNotFoundException("Livraison introuvable"));
 
         delivery.markDelivered();
 
@@ -109,7 +86,6 @@ public class DeliveryServiceImpl implements DeliveryService {
         for (DeliveryItem item : delivery.getItems()) {
             Product product = item.getProduct();
             int beforeQty = product.getQuantity();
-
 
             int afterQty = beforeQty - item.getQuantityDelivered();
             if (afterQty < 0) throw new BusinessException("Stock insuffisant pour " + product.getName());
@@ -133,9 +109,9 @@ public class DeliveryServiceImpl implements DeliveryService {
             saleItems.add(saleItem);
         }
 
-        Sale sale = Sale.create(authenticatedUserService.getUserConnected(), saleItems, null);
+        Sale sale = Sale.createFromDelivery(authenticatedUserService.getUserConnected(), saleItems, delivery.getClient(), delivery);
+
         saleRepository.save(sale);
-        delivery.addSale(sale);
 
         return mapper.toDto(deliveryRepository.save(delivery));
 
@@ -145,43 +121,25 @@ public class DeliveryServiceImpl implements DeliveryService {
     public DeliveryResponseDto cancel(Long deliveryId) {
 
         Delivery delivery = deliveryRepository.findById(deliveryId)
-                .orElseThrow(() -> new BusinessException("Livraison introuvable"));
+                .orElseThrow(() -> new ResourceNotFoundException("Livraison introuvable"));
 
         delivery.cancel();
 
         return mapper.toDto(deliveryRepository.save(delivery));
     }
 
-//    @Override
-//    public SaleResponseDto createFromDelivery(Delivery delivery) {
-//        if (delivery.getStatus() != DeliveryStatus.DELIVERED) {
-//            throw new BusinessException("La livraison n'est pas encore livrée");
-//        }
-//
-//        List<SaleItem> saleItems = new ArrayList<>();
-//        for (DeliveryItem item : delivery.getItems()) {
-//            Product product = item.getProduct();
-//            saleItems.add(SaleItem.create(product, item.getQuantityDelivered(), item.getSalePrice()));
-//        }
-//
-//        Sale sale = Sale.create(authenticatedUserService.getUserConnected(), saleItems, delivery.getClient());
-//
-//        saleRepository.save(sale);
-//
-//        return saleMapper.toDto(sale);
-//    }
 
     @Override
-    public DeliveryResponseDto createDeliveryFromSupply(Long supplyId, Long clientId, String address) {
+    public DeliveryResponseDto createDeliveryFromReceivedSupply(Long supplyId, Long clientId, String address) {
         Supply supply = supplyRepository.findById(supplyId)
-                .orElseThrow(() -> new BusinessException("Approvisionnement introuvable"));
+                .orElseThrow(() -> new ResourceNotFoundException("Approvisionnement introuvable"));
 
         if (supply.getStatus() != SupplyStatus.RECEIVED) {
             throw new BusinessException("Approvisionnement non reçu");
         }
 
         Client client = clientRepository.findById(clientId)
-                .orElseThrow(() -> new BusinessException("Client introuvable"));
+                .orElseThrow(() -> new ResourceNotFoundException("Client introuvable"));
 
         Delivery delivery = Delivery.create(client,  address);
 
@@ -217,6 +175,29 @@ public class DeliveryServiceImpl implements DeliveryService {
         };
 
         return deliveryRepository.findAll(spec, pageable).map(mapper::toDto);
+    }
+
+    private List<SaleItem> createSaleItemsFromDelivery(Delivery delivery) {
+        List<SaleItem> saleItems = new ArrayList<>();
+
+        for (DeliveryItem item : delivery.getItems()) {
+
+            inventoryService.deductStock(
+                    item.getProduct(),
+                    item.getQuantityDelivered(),
+                    "Livraison n°" + delivery.getId()
+            );
+
+            // Créer le SaleItem
+            SaleItem saleItem = SaleItem.create(
+                    item.getProduct(),
+                    item.getQuantityDelivered(),
+                    item.getSalePrice()
+            );
+            saleItems.add(saleItem);
+        }
+
+        return saleItems;
     }
 
 }

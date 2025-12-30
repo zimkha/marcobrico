@@ -6,10 +6,11 @@ import java.time.LocalDateTime;
 
 public record DeliveryResponseDto(
         Long id,
-        Long saleId,
-        Long carrierId,
-        String carrierName,
+        Long clientId,
         DeliveryStatus status,
+        String address,
         String trackingNumber,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        Long saleId
 ) {}
+

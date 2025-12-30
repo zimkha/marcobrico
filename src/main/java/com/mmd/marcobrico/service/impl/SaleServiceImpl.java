@@ -2,6 +2,7 @@ package com.mmd.marcobrico.service.impl;
 
 import com.mmd.marcobrico.domain.*;
 import com.mmd.marcobrico.dto.sale.SaleCreateDto;
+import com.mmd.marcobrico.dto.sale.SaleItemDto;
 import com.mmd.marcobrico.dto.sale.SaleResponseDto;
 import com.mmd.marcobrico.exception.BusinessException;
 import com.mmd.marcobrico.exception.ResourceNotFoundException;
@@ -10,19 +11,19 @@ import com.mmd.marcobrico.repository.InventoryRepository;
 import com.mmd.marcobrico.repository.ProductRepository;
 import com.mmd.marcobrico.repository.SaleRepository;
 import com.mmd.marcobrico.repository.UserRepository;
+import com.mmd.marcobrico.service.InventoryService;
 import com.mmd.marcobrico.service.SaleService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.mmd.marcobrico.service.jwt.AuthenticatedUserService;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -41,71 +42,52 @@ public class SaleServiceImpl implements SaleService {
     private final InventoryRepository inventoryRepository;
     private final SaleMapper saleMapper;
     private final UserRepository userRepository;
+    private final InventoryService inventoryService;
+    private final AuthenticatedUserService authenticatedUserService;
 
     @Override
     public SaleResponseDto createSale(SaleCreateDto dto) {
-        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
 
-        assert authentication != null;
-        var user = userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
+        var user = authenticatedUserService.getUserConnected();
 
-        List<SaleItem> items = dto.items().stream().map(i -> {
-            var product = productRepository.findById(i.productId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Produit introuvable"));
+        var items = dto.items().stream()
+                .map(this::createSaleItem)
+                .toList();
 
-            int newQuantity = product.getQuantity() - i.quantity();
-            if (newQuantity < 0) throw new BusinessException("Stock insuffisant pour " + product.getName());
 
-            var qteBeforeSave = product.getQuantity();
-            productRepository.save(product.changeQuantity(newQuantity));
-
-            InventoryEntry entry = InventoryEntry.create(
-                    product,
-                    qteBeforeSave,
-                    newQuantity,
-                    InventoryType.SALE,
-                    "Vente",
-                    user
-
-            );
-            inventoryRepository.save(entry);
-            var totalSub = BigDecimal.valueOf(i.quantity() ).multiply(i.price()) ;
-            return SaleItem.create(product, i.quantity(), totalSub);
-        }).toList();
-
-        Sale entry = Sale.create(user, items, null);
+        Sale entry = Sale.createSimple(user, items);
         return saleMapper.toDto(saleRepository.save(entry));
     }
+
+    @Override
+    public SaleResponseDto createFromDelivery(Delivery delivery) {
+        List<SaleItem> saleItems = createSaleItemsFromDelivery(delivery);
+        Sale sale = Sale.createFromDelivery(
+                authenticatedUserService.getUserConnected(),
+                saleItems,
+                delivery.getClient(),
+                delivery
+        );
+
+        return saleMapper.toDto(saleRepository.save(sale));
+
+    }
+
 
 
     @Override
     public SaleResponseDto cancelSale(Long saleId, String comment) {
-        Authentication authentication= SecurityContextHolder.getContext().getAuthentication();
-        assert authentication != null;
-        var currentUser = userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable"));
+
+        var user = authenticatedUserService.getUserConnected();
 
         Sale sale = saleRepository.findById(saleId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vente introuvable"));
 
-        if (sale.isCanceled()) throw new BusinessException("Vente déjà annulée");
+        if (sale.isCanceled()) {
+            throw new BusinessException("Vente déjà annulée");
+        }
 
-        sale.getItems().forEach(item -> {
-            Product product = item.getProduct();
-            int restoredQuantity = product.getQuantity() + item.getQuantity();
-
-            productRepository.save(product.changeQuantity(restoredQuantity));
-
-            InventoryEntry canceled = InventoryEntry.create(
-                    product,
-                    product.getQuantity(),
-                    restoredQuantity,
-                    InventoryType.CANCELED,
-                    "Annulation vente: " + comment, currentUser
-            );
-            inventoryRepository.save(canceled);
-        });
+        restoreInventoryForSaleCancellation(sale, comment);
 
         sale.cancel();
         return saleMapper.toDto(saleRepository.save(sale));
@@ -163,6 +145,62 @@ public class SaleServiceImpl implements SaleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Vente non trouvé"));
         return saleMapper.toDto(sale);
     }
+
+
+    // PRIVATE METHODE
+    private List<SaleItem> createSaleItemsFromDelivery(Delivery delivery) {
+        List<SaleItem> saleItems = new ArrayList<>();
+        for (DeliveryItem item : delivery.getItems()) {
+            inventoryService.deductStock(
+                    item.getProduct(),
+                    item.getQuantityDelivered(),
+                    "Livraison n°" + delivery.getId()
+            );
+
+            SaleItem saleItem = SaleItem.create(
+                    item.getProduct(),
+                    item.getQuantityDelivered(),
+                    item.getSalePrice()
+            );
+            saleItems.add(saleItem);
+        }
+
+        return saleItems;
+    }
+
+    private SaleItem createSaleItem(SaleItemDto itemDto) {
+        var product = productRepository.findById(itemDto.productId())
+                .orElseThrow(() -> new ResourceNotFoundException("Produit introuvable"));
+
+        validateStock(product, itemDto.quantity());
+        var reason = "Vente";
+        inventoryService.deductStock(product, itemDto.quantity(), reason);
+
+        var totalSub = itemDto.price().multiply(BigDecimal.valueOf(itemDto.quantity()));
+
+        return SaleItem.create(product, itemDto.quantity(), totalSub);
+    }
+
+    private void validateStock(Product product, int quantity) {
+        int newQuantity = product.getQuantity() - quantity;
+        if (newQuantity < 0) {
+            throw new BusinessException("Stock insuffisant pour " + product.getName());
+        }
+    }
+    private void restoreInventoryForItemCancellation(SaleItem item, String comment) {
+        Product product = item.getProduct();
+
+        int newQuantity = product.getQuantity() + item.getQuantity();
+
+        String reason = "Annulation vente: " + comment;
+
+        inventoryService.applyInventoryAdjustment(product, newQuantity, reason);
+    }
+
+    private void restoreInventoryForSaleCancellation(Sale sale, String comment) {
+        sale.getItems().forEach(item -> restoreInventoryForItemCancellation(item, comment));
+    }
+
 }
 
 

@@ -20,7 +20,6 @@ public class Sale {
     private User user;
 
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "sale_id")
     private List<SaleItem> items;
 
     @Column(nullable = false)
@@ -36,7 +35,7 @@ public class Sale {
     @JoinColumn(name = "client_id")
     private Client client;
 
-    @ManyToOne
+    @ManyToOne(optional = true)
     @JoinColumn(name = "delivery_id")
     private Delivery delivery;
 
@@ -50,6 +49,22 @@ public class Sale {
         this.client = client;
         this.createdAt = LocalDateTime.now();
     }
+    private Sale(
+            User user,
+            List<SaleItem> items,
+            BigDecimal total,
+            Client client,
+            Delivery delivery
+    ) {
+        this.user = user;
+        this.items = List.copyOf(items);
+        this.total = total;
+        this.client = client;
+        this.delivery = delivery;
+        this.canceled = false;
+        this.createdAt = LocalDateTime.now();
+    }
+
 
     public static Sale create(User user, List<SaleItem> items, Client client) {
         BigDecimal total = items.stream()
@@ -60,6 +75,26 @@ public class Sale {
         return sale;
     }
 
+    public static Sale createSimple(User user, List<SaleItem> items) {
+        return createInternal(user, items, null, null);
+    }
+    private static Sale createInternal(
+            User user,
+            List<SaleItem> items,
+            Client client,
+            Delivery delivery
+    ) {
+        if (items == null || items.isEmpty())
+            throw new IllegalArgumentException("Une vente doit contenir au moins un article");
+
+        BigDecimal total = items.stream()
+                .map(i -> i.getPrice().multiply(BigDecimal.valueOf(i.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        Sale sale = new Sale(user, items, total, client, delivery);
+        items.forEach(i -> i.attachToSale(sale));
+        return sale;
+    }
 
     public void cancel() {
         if (this.canceled) {
@@ -67,6 +102,22 @@ public class Sale {
         }
         this.canceled = true;
     }
+
+    public static Sale createFromDelivery(
+            User user,
+            List<SaleItem> items,
+            Client client,
+            Delivery delivery
+    ) {
+        if (client == null)
+            throw new IllegalArgumentException("Client obligatoire pour une vente issue d’une livraison");
+
+        if (delivery == null)
+            throw new IllegalArgumentException("Delivery obligatoire pour une vente issue d’une livraison");
+
+        return createInternal(user, items, client, delivery);
+    }
+
     private void recalculateTotal() {
         this.total = items.stream()
                 .map(i -> i.getPrice().multiply(BigDecimal.valueOf(i.getQuantity())))

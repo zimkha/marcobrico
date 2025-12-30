@@ -11,12 +11,13 @@ public interface DeliveryMapper {
     default DeliveryResponseDto toDto(Delivery delivery) {
         return new DeliveryResponseDto(
                 delivery.getId(),
-                delivery.getSale().getId(),
-                delivery.getCarrier().getId(),
-                delivery.getCarrier().getName(),
+                delivery.getClient().getId(),
                 delivery.getStatus(),
+                delivery.getAddress(),
                 delivery.getTrackingNumber(),
-                delivery.getCreatedAt()
+                delivery.getCreatedAt(),
+                null
+
         );
     }
 }

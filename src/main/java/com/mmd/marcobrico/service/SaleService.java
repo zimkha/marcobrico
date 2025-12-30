@@ -1,5 +1,6 @@
 package com.mmd.marcobrico.service;
 
+import com.mmd.marcobrico.domain.Delivery;
 import com.mmd.marcobrico.dto.sale.SaleCreateDto;
 import com.mmd.marcobrico.dto.sale.SaleResponseDto;
 import org.springframework.data.domain.Page;
@@ -24,4 +25,5 @@ public interface SaleService {
     );
 
     SaleResponseDto getSaleDetail(Long saleId);
+    SaleResponseDto createFromDelivery(Delivery delivery);
 }

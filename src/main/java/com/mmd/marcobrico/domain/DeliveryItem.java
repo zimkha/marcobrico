@@ -38,8 +38,14 @@ public class DeliveryItem {
         this.quantityDelivered = quantityDelivered;
     }
 
+    public void deliver(int deliveredQty) {
+        if (deliveredQty <= 0 || deliveredQty > this.quantityDelivered)
+            throw new IllegalStateException("Quantité livrée invalide");
+        this.quantityDelivered = deliveredQty;
+    }
+
     public static DeliveryItem create(Delivery delivery, Product product, int quantity) {
-        if (quantity <= 0)
+        if (quantity <= 0 )
             throw new IllegalArgumentException("Quantité livrée invalide");
         return new DeliveryItem(delivery, product, quantity);
     }

@@ -27,11 +27,6 @@ public class Delivery {
     @OneToMany(mappedBy = "delivery", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<DeliveryItem> items = new ArrayList<>();
 
-    @OneToMany
-    @JoinColumn(name = "delivery_id")
-    private List<Sale> sales = new ArrayList<>();
-
-
     private String address;
     private String trackingNumber;
 
@@ -41,7 +36,6 @@ public class Delivery {
 
     private Delivery(Client client, String address) {
         this.client = client;
-
         this.address = address;
         this.status = DeliveryStatus.CREATED;
         this.createdAt = LocalDateTime.now();
@@ -70,14 +64,14 @@ public class Delivery {
         this.status = DeliveryStatus.DELIVERED;
     }
 
+
+
     public void cancel() {
         if (status == DeliveryStatus.DELIVERED)
             throw new IllegalStateException("Livraison déjà effectuée");
         this.status = DeliveryStatus.CANCELED;
     }
-    public void addSale(Sale sale) {
-        this.sales.add(sale);
-    }
+
 
     @Override
     public boolean equals(Object o) {
