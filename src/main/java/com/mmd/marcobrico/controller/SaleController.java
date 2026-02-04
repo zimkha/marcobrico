@@ -73,4 +73,6 @@ public class SaleController {
     public  SaleResponseDto getDetailSale(@PathVariable Long id) {
         return saleService.getSaleDetail(id);
     }
+
+
 }

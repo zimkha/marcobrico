@@ -2,13 +2,17 @@ package com.mmd.marcobrico.domain;
 
 
 import jakarta.persistence.*;
-import lombok.Getter;
+import lombok.*;
 
 import java.math.BigDecimal;
 
 @Getter
+@Setter
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "products")
+@NoArgsConstructor
 public class Product {
 
     @Id
@@ -21,56 +25,30 @@ public class Product {
     @Column(nullable = false, unique = true)
     private String reference;
 
-    @Column(nullable = false)
-    private BigDecimal price;
-
-    @Column(nullable = false)
-    private Integer quantity;
-
-    @Column(nullable = false)
-    private Integer seuilStock;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
+    @Column(nullable = false)
     private boolean active;
 
-    protected Product() {}
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private BaseUnit baseUnit;
 
-    private Product(Long id, String name, String reference, BigDecimal price,
-                    Integer quantity, Integer seuilStock, Category category, boolean active) {
-        this.id = id;
-        this.name = name;
-        this.reference = reference;
-        this.price = price;
-        this.quantity = quantity;
-        this.seuilStock = seuilStock;
-        this.category = category;
-        this.active = active;
+
+    public void updateFrom(String name, BaseUnit baseUnit, Category category, Boolean active) {
+        if (name != null && !name.isBlank()) {
+            this.name = name;
+        }
+        if (baseUnit != null) {
+            this.baseUnit = baseUnit;
+        }
+        if (category != null) {
+            this.category = category;
+        }
+        if (active != null) {
+            this.active = active;
+        }
     }
-
-
-    public static Product create(String name, String reference, BigDecimal price,
-                                 Integer quantity, Integer seuilStock, Category category) {
-        if (quantity < 0) throw new IllegalArgumentException("Le stock ne peut pas être négatif");
-        return new Product(null, name, reference, price, quantity, seuilStock, category, true);
-    }
-
-    public Product update(String name, BigDecimal price, Integer seuilStock, Category category) {
-        return new Product(id, name, reference, price, quantity, seuilStock, category, active);
-    }
-
-    public Product changeQuantity(int newQuantity) {
-        if (newQuantity < 0) throw new IllegalArgumentException("Le stock ne peut pas être négatif");
-        return new Product(id, name, reference, price, newQuantity, seuilStock, category, active);
-    }
-
-    public Product addQuantity(int delta) {
-        int updatedQuantity = this.quantity + delta;
-        if (updatedQuantity < 0)
-            throw new IllegalArgumentException("Le stock ne peut pas être négatif");
-        return new Product(id, name, reference, price, updatedQuantity, seuilStock, category, active);
-    }
-
 }

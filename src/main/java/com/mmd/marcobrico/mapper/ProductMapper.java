@@ -5,41 +5,33 @@ import com.mmd.marcobrico.domain.Product;
 import com.mmd.marcobrico.dto.product.ProductCreateDto;
 import com.mmd.marcobrico.dto.product.ProductResponseDto;
 import com.mmd.marcobrico.dto.product.ProductUpdateDto;
-import org.mapstruct.Context;
-import org.mapstruct.Mapper;
-import org.mapstruct.ObjectFactory;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
-@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
+@Mapper(componentModel = "spring")
 public interface ProductMapper {
-
-
-    @ObjectFactory
-    default Product toEntity(ProductCreateDto dto, @Context Category category) {
-        Integer seuilStock = dto.seuilStock() != null ? dto.seuilStock() : 10;
-        Integer quantity = dto.quantity() != null ? dto.quantity() : 0; // sécurité si quantity est null
-
-        return Product.create(
-                dto.name(),
-                dto.reference(),
-                dto.price(),
-                quantity,
-                seuilStock,
-                category
-        );
+    default Product toEntity(ProductCreateDto dto, Category category) {
+        return Product.builder()
+                .name(dto.name())
+                .reference(dto.reference())
+                .category(category)
+                .active(true)
+                .baseUnit(dto.baseUnit())
+                .build();
     }
+    default void updateEntity(ProductUpdateDto dto, Product product, Category category) {
 
-
-    @ObjectFactory
-    default Product updateEntity(ProductUpdateDto dto, @Context Product existing, @Context Category category) {
-        Integer seuilStock = dto.seuilStock() != null ? dto.seuilStock() : (existing.getSeuilStock() != null ? existing.getSeuilStock() : 10);
-
-        return existing.update(
-                dto.name(),
-                dto.price(),
-                seuilStock,
-                category
-        );
+        if (dto.name() != null) {
+            product.setName(dto.name());
+        }
+        if (dto.baseUnit() != null) {
+            product.setBaseUnit(dto.baseUnit());
+        }
+        if (category != null) {
+            product.setCategory(category);
+        }
+        if (dto.active() != null) {
+            product.setActive(dto.active());
+        }
     }
 
     default ProductResponseDto toDto(Product product) {
@@ -47,11 +39,10 @@ public interface ProductMapper {
                 product.getId(),
                 product.getName(),
                 product.getReference(),
-                product.getPrice(),
-                product.getQuantity() != null ? product.getQuantity() : 0,
-                product.getSeuilStock() != null ? product.getSeuilStock() : 10,
+                product.getBaseUnit(),
                 product.getCategory().getId(),
-                product.getCategory().getName()
+                product.getCategory().getName(),
+                product.isActive()
         );
     }
 }

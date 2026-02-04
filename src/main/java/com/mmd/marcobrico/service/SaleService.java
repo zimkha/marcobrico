@@ -26,4 +26,5 @@ public interface SaleService {
 
     SaleResponseDto getSaleDetail(Long saleId);
     SaleResponseDto createFromDelivery(Delivery delivery);
+    long getTotalSales();
 }

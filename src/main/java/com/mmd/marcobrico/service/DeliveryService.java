@@ -5,6 +5,8 @@ import com.mmd.marcobrico.dto.delivery.DeliveryCreateDto;
 import com.mmd.marcobrico.dto.delivery.DeliveryResponseDto;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
+
 public interface DeliveryService {
 
     DeliveryResponseDto create(DeliveryCreateDto dto);
@@ -27,5 +29,6 @@ public interface DeliveryService {
 
             String sortDirection
     );
+    List<DeliveryResponseDto> deliveries();
 }
 

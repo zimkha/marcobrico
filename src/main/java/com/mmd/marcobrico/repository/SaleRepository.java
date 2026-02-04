@@ -49,5 +49,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end
     );
+    @Query("SELECT COUNT(s) FROM Sale s WHERE s.canceled = false")
+    int getNumberTotalSale();
 }
 

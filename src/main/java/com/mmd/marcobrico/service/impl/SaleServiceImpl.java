@@ -73,6 +73,10 @@ public class SaleServiceImpl implements SaleService {
 
     }
 
+    @Override
+    public long getTotalSales() {
+        return saleRepository.getNumberTotalSale();
+    }
 
 
     @Override
@@ -172,7 +176,7 @@ public class SaleServiceImpl implements SaleService {
         var product = productRepository.findById(itemDto.productId())
                 .orElseThrow(() -> new ResourceNotFoundException("Produit introuvable"));
 
-        validateStock(product, itemDto.quantity());
+        //validateStock(product, itemDto.quantity());
         var reason = "Vente";
         inventoryService.deductStock(product, itemDto.quantity(), reason);
 
@@ -182,19 +186,19 @@ public class SaleServiceImpl implements SaleService {
     }
 
     private void validateStock(Product product, int quantity) {
-        int newQuantity = product.getQuantity() - quantity;
-        if (newQuantity < 0) {
-            throw new BusinessException("Stock insuffisant pour " + product.getName());
-        }
+//        int newQuantity = product.getQuantity() - quantity;
+//        if (newQuantity < 0) {
+//            throw new BusinessException("Stock insuffisant pour " + product.getName());
+//        }
     }
     private void restoreInventoryForItemCancellation(SaleItem item, String comment) {
         Product product = item.getProduct();
 
-        int newQuantity = product.getQuantity() + item.getQuantity();
+        //int newQuantity = product.getQuantity() + item.getQuantity();
 
         String reason = "Annulation vente: " + comment;
 
-        inventoryService.applyInventoryAdjustment(product, newQuantity, reason);
+       // inventoryService.applyInventoryAdjustment(product, newQuantity, reason);
     }
 
     private void restoreInventoryForSaleCancellation(Sale sale, String comment) {

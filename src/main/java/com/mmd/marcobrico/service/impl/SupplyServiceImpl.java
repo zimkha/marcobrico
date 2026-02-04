@@ -67,17 +67,17 @@ public class SupplyServiceImpl implements SupplyService {
 
         supply.getItems().forEach(item -> {
             Product product = item.getProduct();
-            int before = product.getQuantity();
-
-            int after = before + item.getQuantity();
-            productRepository.save(product.changeQuantity(after));
+//            int before = product.getQuantity();
+//
+//            int after = before + item.getQuantity();
+            //productRepository.save(product.changeQuantity(after));
 
             var user = authenticatedUserService.getUserConnected();
             inventoryRepository.save(
                     InventoryEntry.create(
                             product,
-                            before,
-                            after,
+                            4,
+                            10,
                             InventoryType.ENTRY,
                             "Réception approvisionnement",
                             user

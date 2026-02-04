@@ -10,6 +10,7 @@ import com.mmd.marcobrico.repository.ClientRepository;
 import com.mmd.marcobrico.service.ClientService;
 import com.mmd.marcobrico.specification.ClientSpecification;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,20 +29,28 @@ public class ClientServiceImpl implements ClientService {
     @Override
     public ClientResponseDto create(ClientCreateDto dto) {
 
-        if (dto.phone() != null && repository.existsByPhone(dto.phone()))
-            throw new BusinessException("Téléphone déjà utilisé");
+        checkClient(dto);
 
-        if (dto.email() != null && repository.existsByEmail(dto.email()))
-            throw new BusinessException("Email déjà utilisé");
+        Client client = createClient(dto);
 
-        Client client = Client.create(
+        return mapper.toDto(repository.save(client));
+    }
+
+    private static @NonNull Client createClient(ClientCreateDto dto) {
+        return Client.create(
                 dto.name(),
                 dto.phone(),
                 dto.email(),
                 dto.address()
         );
+    }
 
-        return mapper.toDto(repository.save(client));
+    private void checkClient(ClientCreateDto dto) {
+        if (dto.phone() != null && repository.existsByPhone(dto.phone()))
+            throw new BusinessException("Téléphone déjà utilisé");
+
+        if (dto.email() != null && repository.existsByEmail(dto.email()))
+            throw new BusinessException("Email déjà utilisé");
     }
 
     @Override

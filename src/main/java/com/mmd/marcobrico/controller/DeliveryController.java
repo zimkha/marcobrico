@@ -16,9 +16,10 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/deliveries")
+@RequestMapping("/deliveries")
 @RequiredArgsConstructor
 @Validated
 public class DeliveryController {
@@ -36,7 +37,13 @@ public class DeliveryController {
                 .body(response);
     }
 
-    @PostMapping("/{id}/dispatch")
+    @GetMapping
+    public List<DeliveryResponseDto> listDeliveries(
+    ) {
+        return service.deliveries();
+    }
+
+    @PostMapping("/{id}/shipment")
     public ResponseEntity<DeliveryResponseDto> dispatch(
             @PathVariable Long id,
             @Valid @RequestBody DeliveryDispatchDto dto
@@ -45,13 +52,13 @@ public class DeliveryController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{id}/deliver")
+    @PostMapping("/{id}/confirmation")
     public ResponseEntity<DeliveryResponseDto> deliver(@PathVariable Long id) {
         DeliveryResponseDto response = service.deliver(id);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{id}/cancel")
+    @PostMapping("/{id}/cancellation")
     public ResponseEntity<Void> cancel(@PathVariable Long id) {
         service.cancel(id);
         return ResponseEntity.noContent().build(); // 204 No Content
@@ -71,20 +78,5 @@ public class DeliveryController {
                 saleId, carrierId, status, page, size, sortBy, sortDirection
         );
         return ResponseEntity.ok(results);
-    }
-
-    @PostMapping("/create-from-supply")
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<DeliveryResponseDto> createDeliveryFromReceivedSupply(
-            @Valid @RequestBody DeliveryCreateSaleRequestDto dto
-    ) {
-        DeliveryResponseDto response = service.createDeliveryFromReceivedSupply(
-                dto.supplyId(),
-                dto.clientId(),
-                dto.address()
-        );
-        return ResponseEntity
-                .created(URI.create("/api/v1/deliveries/" + response.id()))
-                .body(response);
     }
 }

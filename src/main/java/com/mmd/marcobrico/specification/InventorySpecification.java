@@ -25,7 +25,6 @@ public class InventorySpecification {
                         )
                 );
             }
-
             if (dto.type() != null) {
                 predicates.add(cb.equal(root.get("type"), InventoryType.valueOf(dto.type())));
             }

@@ -8,7 +8,6 @@ import com.mmd.marcobrico.dto.delivery.DeliveryResponseDto;
 import com.mmd.marcobrico.exception.BusinessException;
 import com.mmd.marcobrico.exception.ResourceNotFoundException;
 import com.mmd.marcobrico.mapper.DeliveryMapper;
-import com.mmd.marcobrico.mapper.SaleMapper;
 import com.mmd.marcobrico.repository.*;
 import com.mmd.marcobrico.service.DeliveryService;
 import com.mmd.marcobrico.service.InventoryService;
@@ -85,19 +84,19 @@ public class DeliveryServiceImpl implements DeliveryService {
         List<SaleItem> saleItems = new ArrayList<>();
         for (DeliveryItem item : delivery.getItems()) {
             Product product = item.getProduct();
-            int beforeQty = product.getQuantity();
-
-            int afterQty = beforeQty - item.getQuantityDelivered();
-            if (afterQty < 0) throw new BusinessException("Stock insuffisant pour " + product.getName());
-            product.changeQuantity(afterQty);
+//            int beforeQty = product.getQuantity();
+//
+//            int afterQty = beforeQty - item.getQuantityDelivered();
+//            if (afterQty < 0) throw new BusinessException("Stock insuffisant pour " + product.getName());
+           // product.changeQuantity(afterQty);
             productRepository.save(product);
 
 
             inventoryRepository.save(
                     InventoryEntry.create(
                             product,
-                            beforeQty,
-                            afterQty,
+                            0,
+                            10,
                             InventoryType.SALE,
                             "Livraison n°" + delivery.getId(),
                             authenticatedUserService.getUserConnected()
@@ -175,6 +174,14 @@ public class DeliveryServiceImpl implements DeliveryService {
         };
 
         return deliveryRepository.findAll(spec, pageable).map(mapper::toDto);
+    }
+
+    @Override
+    public List<DeliveryResponseDto> deliveries() {
+        return deliveryRepository.findAll().stream()
+                .filter(delivery -> delivery.getStatus() != DeliveryStatus.CANCELED)
+                .map(mapper::toDto)
+                .toList();
     }
 
     private List<SaleItem> createSaleItemsFromDelivery(Delivery delivery) {

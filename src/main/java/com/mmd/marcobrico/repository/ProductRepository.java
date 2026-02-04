@@ -16,7 +16,6 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
 
     Optional<Product> findByReference(String reference);
 
-    boolean existsByReference(String reference);
     @Query("""
     SELECT new com.mmd.marcobrico.dto.reporting.TopProductDto(
         p.id, p.name, SUM(i.quantity)
@@ -41,6 +40,50 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     """)
     List<AverageSoldDto> averageSold();
     List<Product> findTop10ByNameContainingIgnoreCaseOrderByNameAsc(String name);
+
+    Page<Product> findByActiveTrue(Pageable pageable);
+
+
+    /**
+     * CONCEPT: Query Method - Filtrage par catégorie
+     *
+     * Generated SQL:
+     * SELECT * FROM products WHERE category_id = ?
+     *
+     * @param categoryId ID de la catégorie
+     * @param pageable pagination/tri
+     * @return Page de produits
+     */
+    Page<Product> findByCategoryId(Long categoryId, Pageable pageable);
+
+    /**
+     * CONCEPT: Query Method - LIKE insensible à la casse
+     *
+     * Generated SQL:
+     * SELECT * FROM products
+     * WHERE LOWER(name) LIKE LOWER('%' || ? || '%')
+     *
+     * @param name fragment de nom à chercher
+     * @param pageable pagination
+     * @return Page de produits correspondants
+     */
+    Page<Product> findByNameContainingIgnoreCase(String name, Pageable pageable);
+
+
+
+    /**
+     * CONCEPT: Existence Check (optimisation)
+     *
+     * Generated SQL:
+     * SELECT COUNT(*) > 0 FROM products WHERE reference = ?
+     *
+     * Plus performant que findByReference().isPresent()
+     * car ne charge pas toute l'entité
+     *
+     * @param reference référence à vérifier
+     * @return true si existe, false sinon
+     */
+    boolean existsByReference(String reference);
 
 
 
