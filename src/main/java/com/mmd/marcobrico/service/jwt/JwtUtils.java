@@ -4,6 +4,7 @@ import com.mmd.marcobrico.config.AppJwtConfig;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +26,7 @@ public class JwtUtils {
     }
 
     private SecretKey key() {
-        return Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes(StandardCharsets.UTF_8));
+        return Keys.hmacShaKeyFor(jwtConfig.getJwt().secret().getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateJwtToken(UserDetails userDetails) {
@@ -33,7 +34,7 @@ public class JwtUtils {
                 .setSubject(userDetails.getUsername())
                 .claim("role", userDetails.getAuthorities().iterator().next().getAuthority())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtConfig.getExpiration()))
+                .setExpiration(new Date(System.currentTimeMillis() + jwtConfig.getJwt().expiration()))
                 .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
         return token;

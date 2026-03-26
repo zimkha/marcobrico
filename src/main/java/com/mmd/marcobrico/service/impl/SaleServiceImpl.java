@@ -84,8 +84,7 @@ public class SaleServiceImpl implements SaleService {
 
         var user = authenticatedUserService.getUserConnected();
 
-        Sale sale = saleRepository.findById(saleId)
-                .orElseThrow(() -> new ResourceNotFoundException("Vente introuvable"));
+        Sale sale = saleRepository.getById(saleId);
 
         if (sale.isCanceled()) {
             throw new BusinessException("Vente déjà annulée");
@@ -185,12 +184,6 @@ public class SaleServiceImpl implements SaleService {
         return SaleItem.create(product, itemDto.quantity(), totalSub);
     }
 
-    private void validateStock(Product product, int quantity) {
-//        int newQuantity = product.getQuantity() - quantity;
-//        if (newQuantity < 0) {
-//            throw new BusinessException("Stock insuffisant pour " + product.getName());
-//        }
-    }
     private void restoreInventoryForItemCancellation(SaleItem item, String comment) {
         Product product = item.getProduct();
 

@@ -10,8 +10,11 @@ import com.mmd.marcobrico.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.password.CompromisedPasswordChecker;
+import org.springframework.security.authentication.password.CompromisedPasswordDecision;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,10 +23,12 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final PasswordEncoder passwordEncoder; // l'un
+    private final BCryptPasswordEncoder bCryptPasswordEncoder; // ou l'autre
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtService;
     private final UserService userService;
+    private final CompromisedPasswordChecker compromisedPasswordChecker;
     public AuthResponse login(LoginRequest request) {
 
         authenticationManager.authenticate(
@@ -52,17 +57,21 @@ public class AuthService {
     public void register(RegisterRequest request) {
 
         if (userRepository.existsByUsername(request.username())) {
-            throw new RuntimeException("Username déjà utilisé");
+            throw new RuntimeException("Username already exist");
         }
 
         if (userRepository.existsByEmail(request.email())) {
-            throw new RuntimeException("Email déjà utilisé");
+            throw new RuntimeException("Email already exist");
         }
+
+        // Checker if the password is weak
+        CompromisedPasswordDecision decision = compromisedPasswordChecker.check(request.password());
+        if (decision.isCompromised()) throw new IllegalArgumentException("Password is compromised, please change your password");
 
         User user = User.builder()
                 .username(request.username())
                 .email(request.email())
-                .password(passwordEncoder.encode(request.password()))
+                .password(bCryptPasswordEncoder.encode(request.password()))
                 .role(request.role())
                 .build();
 

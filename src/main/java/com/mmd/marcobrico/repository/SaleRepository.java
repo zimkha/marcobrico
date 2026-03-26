@@ -1,6 +1,7 @@
 package com.mmd.marcobrico.repository;
 
 import com.mmd.marcobrico.domain.Sale;
+import com.mmd.marcobrico.exception.ResourceNotFoundException;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -11,17 +12,21 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificationExecutor<Sale> {
+
+    default Sale getById(Long id) {
+        return findById(id).orElseThrow(() -> new ResourceNotFoundException("Vente Introuvable"));
+    }
     @Query("""
-        SELECT COUNT(si) 
-        FROM SaleItem si 
+        SELECT COUNT(si)
+        FROM SaleItem si
         WHERE si.product.id = :productId
     """)
     long countByProductId(@Param("productId") Long productId);
 
     @Query("""
-        SELECT si.sale 
-        FROM SaleItem si 
-        WHERE si.product.id = :productId 
+        SELECT si.sale
+        FROM SaleItem si
+        WHERE si.product.id = :productId
         ORDER BY si.sale.createdAt DESC
     """)
     List<Sale> findSalesByProductIdOrderByDateDesc(@Param("productId") Long productId);
