@@ -85,7 +85,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/gestion/**").hasAnyRole("ADMIN", "GESTIONNAIRE")
                         .requestMatchers("/api/vente/**").hasAnyRole("ADMIN", "CAISSIER")
                         .requestMatchers("/actuator/endpoint/info").hasRole("ENDPOINT_ADMIN")
-                       // .requestMatchers("/api/product/**").hasAuthority("USER")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(authorizationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -127,10 +126,7 @@ public class SecurityConfig {
 
     }
 
-//    @Bean
-//    public CompromisedPasswordChecker haveIBeenPwnedPasswordChecker() {
-//       return new HaveIBeenPwnedRestApiPasswordChecker();
-//    }
+
 
     @Bean
     public ResourcePasswordChecker resourcePasswordChecker() {
@@ -154,4 +150,3 @@ public class SecurityConfig {
         }
     }
 }
-

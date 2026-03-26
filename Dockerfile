@@ -1,22 +1,13 @@
-FROM bellsoft/liberica-openjdk-debian:25-cds AS builder
-WORKDIR /builder
+FROM eclipse-temurin:21.0.8_9-jdk-jammy AS builder
+WORKDIR /opt/marcobrico
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+RUN ./mvnw dependency:go-offline
+COPY ./src ./src
+RUN ./mvnw clean install -DskipITs -Dmaven.failsafe.skip=true
 
-ARG JAR_FILE=target/*.jar
-COPY ${JAR_FILE} marcobrico.jar
-
-RUN java -Djarmode=tools -jar marcobrico.jar extract --layers --destination extracted
-
-# Runtime container
-FROM bellsoft/liberica-openjdk-debian:25-cds
-WORKDIR /marcobrico
-
-COPY --from=builder /builder/extracted/dependencies/ ./
-COPY --from=builder /builder/extracted/spring-boot-loader/ ./
-COPY --from=builder /builder/extracted/snapshot-dependencies/ ./
-COPY --from=builder /builder/extracted/application/ ./
-
-RUN java -XX:ArchiveClassesAtExit=marcobrico/marcobrico.jsa \
-         -Dspring.context.exit=onRefresh \
-         -jar marcobrico/marcobrico.jar
-
-ENTRYPOINT ["java", "-XX:SharedArchiveFile=marcobrico.jsa", "-jar", "marcobrico.jar"]
+FROM eclipse-temurin:21.0.8_9-jre-jammy AS final
+WORKDIR /opt/marcobrico
+EXPOSE 8080
+COPY --from=builder /opt/marcobrico/target/marcobrico-*.jar marcobrico.jar
+ENTRYPOINT ["java", "-jar", "marcobrico.jar"]

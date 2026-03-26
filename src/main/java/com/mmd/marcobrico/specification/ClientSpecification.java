@@ -10,6 +10,7 @@ import java.util.List;
 public class ClientSpecification {
 
     public static Specification<Client> search(String name, String phone, String email) {
+        
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 

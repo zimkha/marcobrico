@@ -37,7 +37,7 @@ spring:
     name: marcobrico-management
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/marcobrico
+    url: jdbc:postgresql://marcobrico-db:5432/marcobrico
     username: marcobrico
     password: marcobrico123
     driver-class-name: org.postgresql.Driver
@@ -50,7 +50,7 @@ spring:
     properties:
       hibernate:
         format_sql: false
-#        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 app:
   front:
     endpoint: http://localhost:5173
