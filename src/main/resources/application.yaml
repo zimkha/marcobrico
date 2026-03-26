@@ -2,7 +2,32 @@ server:
   port: 8080
   servlet:
     context-path: /api
-
+management:
+  endpoints:
+    health:
+      show-details: always
+    web:
+      exposure:
+        include: health, info, prometheus, metrics
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      show-details: always
+    loggers:
+      access: read-only
+  metrics:
+    enable:
+      all: "true"
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+      slo:
+        http.server.requests: "100ms, 300ms, 500ms"
 spring:
   devtools:
     restart:
@@ -18,27 +43,41 @@ spring:
     driver-class-name: org.postgresql.Driver
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: update
 #    show-sql: true
     properties:
       hibernate:
         format_sql: false
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-
-jwt:
-  secret: 2xVq8F9pN3kL7mZ1wR4tY6uI0oP5aS8dG1hJ3kM2nB9=
-  expiration: 86400000
+#        dialect: org.hibernate.dialect.PostgreSQLDialect
+app:
+  front:
+    endpoint: http://localhost:5173
+  jwt:
+    secret: 2xVq8F9pN3kL7mZ1wR4tY6uI0oP5aS8dG1hJ3kM2nB9=
+    expiration: 86400000
 
 logging:
+  file:
+    path: /var/log/marcobrico
   level:
     root: INFO
     org.springframework.web: INFO
     org.springframework.security: DEBUG
+    org:
+      springframework:
+        security:
+          config:
+            annotation:
+              authentication:
+                configuration:
+                  InitializeUserDetailsBeanManagerConfigurer: ERROR
 
 
 springdoc:
   api-docs:
+    enabled: false
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html

@@ -4,6 +4,7 @@ import com.mmd.marcobrico.dto.product.*;
 import com.mmd.marcobrico.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,6 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/products")
 @RequiredArgsConstructor
+@Slf4j
 public class ProductController {
 
     private final ProductService service;
@@ -33,6 +35,7 @@ public class ProductController {
 
     @GetMapping
     public List<ProductResponseDto> getAll() {
+        log.info("GET ALL PRODUCTS");
         return service.findAll();
     }
 

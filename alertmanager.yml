@@ -1,0 +1,19 @@
+global:
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'zimkhandiaye@gmail.com'
+  smtp_auth_username: 'zimjuniorndiaye@gmail.com'
+  smtp_auth_password: 'znBaobab@123'
+  smtp_require_tls: true
+
+route:
+  group_by: ['alertname']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: 'email-alertes'
+
+receivers:
+  - name: 'email-alertes'
+    email_configs:
+      - to: 'zimjuniorndiaye@gmail.com'
+        send_resolved: true

@@ -25,4 +25,8 @@ public class UserService  implements UserDetailsService {
                 .roles(user.getRole().name())
                 .build();
     }
+
+    public void updatePassword(Long userId, String newPassword) {
+
+    }
 }
