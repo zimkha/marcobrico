@@ -21,7 +21,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -53,17 +53,13 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git commit -am "release: v$VERSION"
+          git commit -am "release: v${{ env.VERSION }}"
           git push origin HEAD
+
       - name: Create Git Tag
         run: |
-          git tag v$VERSION
-          git push origin v$VERSION
-
-      - name: Build Docker Image
-        run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/marcobrico:$VERSION \
-                       -t ${{ secrets.DOCKERHUB_USERNAME }}/marcobrico:latest .
+          git tag v${{ env.VERSION }}
+          git push origin v${{ env.VERSION }}
 
       - name: Login Docker Hub
         uses: docker/login-action@v3
@@ -71,14 +67,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Build Docker Image
+        run: |
+          docker build \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/marcobrico:${{ env.VERSION }} \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/marcobrico:latest .
+
       - name: Push Docker Image
         run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/marcobrico:$VERSION
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/marcobrico:${{ env.VERSION }}
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/marcobrico:latest
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0
-          name: Marcobrico v1.0
+          tag_name: v${{ env.VERSION }}
+          name: Marcobrico v${{ env.VERSION }}
           generate_release_notes: true
