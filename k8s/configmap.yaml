@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: marcobrico-db-config
+  namespace: dev
+data:
+  DB_HOST: marcobrico-db
+  DB_PORT: "5432"

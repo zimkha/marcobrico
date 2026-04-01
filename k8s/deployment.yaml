@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: marcobrico-api
+  namespace: dev
+  labels:
+    app: api
+    env: dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api
+      env: dev
+  template:
+    metadata:
+      labels:
+        app: api
+        env: dev
+    spec:
+      containers:
+        - image: khazim/marcobrico:1.0.0
+          name: marcobrico-api
+          resources: {}
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://marcobrico-db:5432/marcobrico
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: marcobrico-db-secret
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: marcobrico-db-secret
+                  key: POSTGRES_PASSWORD
