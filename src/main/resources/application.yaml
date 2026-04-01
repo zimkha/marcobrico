@@ -37,9 +37,9 @@ spring:
     name: marcobrico-management
 
   datasource:
-    url: jdbc:postgresql://marcobrico-db:5432/marcobrico
-    username: marcobrico
-    password: marcobrico123
+    url: ${SPRING_DATASOURCE_URL} #jdbc:postgresql://marcobrico-db:5432/marcobrico
+    username: ${SPRING_DATASOURCE_USERNAME} #marcobrico
+    password: ${SPRING_DATASOURCE_PASSWORD} #marcobrico123
     driver-class-name: org.postgresql.Driver
 
   jpa:
