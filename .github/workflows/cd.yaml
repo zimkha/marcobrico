@@ -1,0 +1,84 @@
+name: Marcobrico Release
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: "Type de release"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Bump Maven Version
+        run: |
+          CURRENT=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          CURRENT=${CURRENT%-SNAPSHOT}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+          case "${{ github.event.inputs.release_type }}" in
+            patch) PATCH=$((PATCH+1)) ;;
+            minor) MINOR=$((MINOR+1)); PATCH=0 ;;
+            major) MAJOR=$((MAJOR+1)); MINOR=0; PATCH=0 ;;
+          esac
+
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          mvn versions:set -DnewVersion=$NEW_VERSION
+          mvn versions:commit
+          echo "VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git commit -am "release: v$VERSION"
+          git push origin HEAD
+      - name: Create Git Tag
+        run: |
+          git tag v$VERSION
+          git push origin v$VERSION
+
+      - name: Build Docker Image
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/marcobrico:$VERSION \
+                       -t ${{ secrets.DOCKERHUB_USERNAME }}/marcobrico:latest .
+
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push Docker Image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/marcobrico:$VERSION
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/marcobrico:latest
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0
+          name: Marcobrico v1.0
+          generate_release_notes: true
