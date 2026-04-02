@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.mmd</groupId>
 	<artifactId>marcobrico</artifactId>
-	<version>0.1.0</version>
+	<version>1.0.0</version>
 	<name>marcobrico</name>
 	<description>Application de gestion Quincaillerie</description>
 	<url/>
